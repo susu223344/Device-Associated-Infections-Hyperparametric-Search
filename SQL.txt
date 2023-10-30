@@ -1,0 +1,472 @@
+--First day of data extraction
+--Available data
+
+DROP TABLE IF EXISTS first_day1; CREATE TABLE first_day1 AS
+WITH cbc AS (
+    SELECT
+        ie.stay_id
+        , AVG(platelet) AS platelets_mean
+        , AVG (wbc) AS wbc_mean
+        , AVG (rbc) AS rbc_mean
+        , AVG (hemoglobin) AS hemoglobin_mean
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.complete_blood_count cb
+        ON cb.subject_id = ie.subject_id
+            AND cb.charttime >= DATETIME_SUB(ie.intime, INTERVAL '6' HOUR)
+            AND cb.charttime <= DATETIME_ADD(ie.intime, INTERVAL '1' DAY)
+    GROUP BY ie.stay_id
+)
+
+, chem AS (
+    SELECT
+        ie.stay_id
+        , AVG(pao2fio2ratio) AS pao2fio2ratio_mean
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.bg bg
+        ON ie.subject_id = bg.subject_id
+            AND bg.charttime >= DATETIME_SUB(ie.intime, INTERVAL '6' HOUR)
+            AND bg.charttime <= DATETIME_ADD(ie.intime, INTERVAL '1' DAY)
+    GROUP BY ie.stay_id
+)
+
+, chem_add AS (
+    SELECT
+        ie.stay_id
+        , AVG(aniongap) AS aniongap_mean
+				, AVG(bicarbonate) AS bicarbonate_mean
+				, AVG(bun) AS bun_mean
+				, AVG(calcium) AS calcium_mean
+				, AVG(chloride) AS chloride_mean
+				, AVG(creatinine) AS creatinine_mean
+				, AVG(sodium) AS sodium_mean
+				, AVG(potassium) AS potassium_mean		
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.chemistry chemis
+        ON ie.subject_id = chemis.subject_id
+            AND chemis.charttime >= DATETIME_SUB(ie.intime, INTERVAL '6' HOUR)
+            AND chemis.charttime <= DATETIME_ADD(ie.intime, INTERVAL '1' DAY)
+    GROUP BY ie.stay_id
+)
+
+, coag AS (
+    SELECT
+        ie.stay_id
+        , AVG(inr) AS inr_mean
+        , AVG(pt) AS pt_mean
+        , AVG(ptt) AS ptt_mean
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.coagulation le
+        ON le.subject_id = ie.subject_id
+            AND le.charttime >= DATETIME_SUB(ie.intime, INTERVAL '6' HOUR)
+            AND le.charttime <= DATETIME_ADD(ie.intime, INTERVAL '1' DAY)
+    GROUP BY ie.stay_id
+)
+
+, enz AS (
+    SELECT
+        ie.stay_id
+        , AVG(alt) AS alt_mean
+        , AVG (alp) AS alp_mean
+        , AVG (ast) AS ast_mean
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.enzyme le
+        ON le.subject_id = ie.subject_id
+            AND le.charttime >= DATETIME_SUB(ie.intime, INTERVAL '6' HOUR)
+            AND le.charttime <= DATETIME_ADD(ie.intime, INTERVAL '1' DAY)
+    GROUP BY ie.stay_id
+)
+
+, vit AS (
+    SELECT
+        ie.stay_id
+        , AVG(heart_rate) AS heart_rate_mean
+        , AVG (mbp) AS mbp_mean
+        , AVG (resp_rate) AS resp_rate_mean
+        , AVG (temperature) AS temperature_mean
+        , AVG (glucose) AS glucose_mean
+        , AVG (spo2) AS spo2_mean
+        , AVG (sbp) AS sbp_mean
+        , AVG (dbp) AS dbp_mean
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.vitalsign ce
+        ON ce.subject_id = ie.subject_id
+            AND ce.charttime >= DATETIME_SUB(ie.intime, INTERVAL '6' HOUR)
+            AND ce.charttime <= DATETIME_ADD(ie.intime, INTERVAL '1' DAY)
+    GROUP BY ie.stay_id
+)
+
+, uri AS (
+    SELECT
+        ie.stay_id
+        , urineoutput
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.first_day_urine_output uo
+        ON ie.stay_id = uo.stay_id
+)
+
+, hei AS (
+    SELECT
+        ie.stay_id
+        , height
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.first_day_height ht
+        ON ie.stay_id = ht.stay_id
+)
+
+, wei AS (
+    SELECT
+        ie.stay_id
+        , weight
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.first_day_weight wt
+        ON ie.stay_id = wt.stay_id
+)
+
+, gcs AS (
+    SELECT
+        ie.stay_id
+        , gcs_min
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.first_day_gcs cs
+        ON ie.stay_id = cs.stay_id
+)
+
+, sofa AS (
+    SELECT
+        ie.stay_id
+        , sofa
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.first_day_sofa so
+        ON ie.stay_id = so.stay_id
+)
+
+, asp AS (
+    SELECT
+        ie.stay_id
+        , apsiii
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.apsiii ps
+        ON ie.stay_id = ps.stay_id
+)
+
+, lod AS (
+    SELECT
+        ie.stay_id
+        , lods
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.lods ds
+        ON ie.stay_id = ds.stay_id
+)
+
+, oas AS (
+    SELECT
+        ie.stay_id
+        , oasis
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.oasis oa
+        ON ie.stay_id = oa.stay_id
+)
+
+, sap AS (
+    SELECT
+        ie.stay_id
+        , sapsii
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.sapsii sa
+        ON ie.stay_id = sa.stay_id
+)
+
+, sir AS (
+    SELECT
+        ie.stay_id
+        , sirs
+    FROM mimiciv_icu.icustays ie
+    LEFT JOIN mimiciv_derived.sirs ss
+        ON ie.stay_id = ss.stay_id
+)
+
+SELECT
+    ie.subject_id
+    , ie.stay_id
+		, platelets_mean
+		, wbc_mean
+		, rbc_mean
+		, hemoglobin_mean
+		, pao2fio2ratio_mean
+		, inr_mean
+		, pt_mean
+		, ptt_mean
+		, aniongap_mean
+		, bicarbonate_mean
+		, bun_mean
+		, calcium_mean
+		, chloride_mean
+		, creatinine_mean
+		, sodium_mean
+		, potassium_mean
+, alt_mean
+, alp_mean
+, ast_mean
+, heart_rate_mean
+, mbp_mean
+, resp_rate_mean
+, temperature_mean
+, spo2_mean
+, CASE WHEN glucose_mean > 10000 then NULL 
+		else glucose_mean::numeric end as glucose_mean
+, sbp_mean
+, dbp_mean
+, urineoutput
+, height
+, weight
+, gcs_min
+, sofa
+, apsiii
+, lods
+, oasis
+, sapsii
+, sirs
+FROM mimiciv_icu.icustays ie
+LEFT JOIN cbc
+    ON ie.stay_id = cbc.stay_id
+LEFT JOIN chem
+    ON ie.stay_id = chem.stay_id
+LEFT JOIN chem_add
+    ON ie.stay_id = chem_add.stay_id
+LEFT JOIN coag
+    ON ie.stay_id = coag.stay_id
+LEFT JOIN enz
+ON ie.stay_id = enz.stay_id
+LEFT JOIN vit
+ON ie.stay_id = vit.stay_id
+LEFT JOIN uri
+ON ie.stay_id = uri.stay_id
+LEFT JOIN hei
+ON ie.stay_id = hei.stay_id
+LEFT JOIN wei
+ON ie.stay_id = wei.stay_id
+LEFT JOIN gcs
+ON ie.stay_id = gcs.stay_id
+LEFT JOIN sofa
+ON ie.stay_id = sofa.stay_id
+LEFT JOIN asp
+ON ie.stay_id = asp.stay_id
+LEFT JOIN lod
+ON ie.stay_id = lod.stay_id
+LEFT JOIN oas
+ON ie.stay_id = oas.stay_id
+LEFT JOIN sap
+ON ie.stay_id = sap.stay_id
+LEFT JOIN sir
+ON ie.stay_id = sir.stay_id
+
+
+
+-- Hypertension
+DROP TABLE IF EXISTS hypertension1;
+CREATE TABLE hypertension1 AS
+with hp AS(
+select
+subject_id,hadm_id,  icd_code
+, CASE when icd_code = '4010' then 1 
+ when icd_code = '4011' then 1 
+ when icd_code = '4019' then 1 
+ when icd_code = '40501' then 1 
+ when icd_code = '40509' then 1 
+ when icd_code = '40511' then 1 
+ when icd_code = '40519' then 1 
+ when icd_code = '40591' then 1
+ when icd_code = '40599' then 1 
+ when icd_code = '64200' then 1 
+ when icd_code = '64201' then 1 
+ when icd_code = '64202' then 1 
+ when icd_code = '64203' then 1 
+ when icd_code = '64204' then 1 
+ when icd_code = '64210' then 1 
+ when icd_code = '64211' then 1 
+ when icd_code = '64212' then 1 
+ when icd_code = '64213' then 1 
+ when icd_code = '64214' then 1 
+ when icd_code = '64220' then 1 
+ when icd_code = '64221' then 1 
+ when icd_code = '64222' then 1 
+ when icd_code = '64223' then 1 
+ when icd_code = '64224' then 1 
+ when icd_code = '64270' then 1 
+ when icd_code = '64271' then 1 
+ when icd_code = '64272' then 1 
+ when icd_code = '64273' then 1 
+ when icd_code = '64274' then 1 
+ when icd_code = '64290' then 1 
+ when icd_code = '64291' then 1 
+ when icd_code = '64292' then 1 
+ when icd_code = '64293' then 1 
+ when icd_code = '64294' then 1 
+ when icd_code = '99791' then 1 
+ when icd_code = 'I10' then 1 
+ when icd_code = 'I15' then 1 
+ when icd_code = 'I150' then 1 
+ when icd_code = 'I151' then 1 
+ when icd_code = 'I152' then 1 
+ when icd_code = 'I158' then 1 
+ when icd_code = 'I159' then 1 
+ when icd_code = 'I973' then 1 
+ when icd_code = 'O10' then 1 
+ when icd_code = 'O100' then 1 
+ when icd_code = 'O1001' then 1 
+ when icd_code = 'O10011' then 1 
+ when icd_code = 'O10012' then 1 
+ when icd_code = 'O10013' then 1 
+ when icd_code = 'O10019' then 1 
+ when icd_code = 'O1002' then 1 
+ when icd_code = 'O1003' then 1 
+ when icd_code = 'O104' then 1 
+ when icd_code = 'O1041' then 1 
+ when icd_code = 'O10411' then 1 
+ when icd_code = 'O10412' then 1 
+ when icd_code = 'O10413' then 1 
+ when icd_code = 'O10419' then 1 
+ when icd_code = 'O1042' then 1 
+ when icd_code = 'O1043' then 1 
+ when icd_code = 'O109' then 1 
+ when icd_code = 'O1091' then 1 
+ when icd_code = 'O10911' then 1 
+ when icd_code = 'O10912' then 1 
+ when icd_code = 'O10913' then 1 
+ when icd_code = 'O10919' then 1 
+ when icd_code = 'O1092' then 1 
+ when icd_code = 'O1093' then 1 
+ when icd_code = 'O11' then 1 
+ when icd_code = 'O111' then 1 
+ when icd_code = 'O112' then 1 
+ when icd_code = 'O113' then 1 
+ when icd_code = 'O114' then 1 
+ when icd_code = 'O115' then 1 
+ when icd_code = 'O119' then 1 
+ when icd_code = 'O12' then 1 
+ when icd_code = 'O13' then 1 
+ when icd_code = 'O131' then 1 
+ when icd_code = 'O132' then 1 
+ when icd_code = 'O133' then 1 
+ when icd_code = 'O134' then 1 
+ when icd_code = 'O135' then 1 
+ when icd_code = 'O139' then 1 
+ when icd_code = 'O16' then 1 
+ when icd_code = 'O161' then 1 
+ when icd_code = 'O162' then 1 
+ when icd_code = 'O163' then 1 
+ when icd_code = 'O164' then 1 
+ when icd_code = 'O165' then 1 
+ when icd_code = 'O169' then 1 
+ when icd_code = 'P292' then 1 
+else 0 end as hypertension 
+from "mimiciv_hosp"."diagnoses_icd"
+group by subject_id, hadm_id, icd_code
+order by subject_id,hadm_id, icd_code
+)
+SELECT * from hp where hypertension =1
+
+DROP TABLE IF EXISTS hypertension2;
+CREATE TABLE hypertension2 AS
+WITH cr as (
+SELECT * ,
+row_number() over (partition by hadm_id order by icd_code) as hypertension_order 
+FROM "mimiciv_derived"."hypertension1"
+)
+select * from cr where hypertension_order = 1
+
+
+
+
+
+-- COPD
+DROP TABLE IF EXISTS copd1;
+CREATE TABLE copd1 AS
+with hp AS(
+select
+subject_id,hadm_id,  icd_code
+, CASE when icd_code = 'J44' then 1 
+ when icd_code = 'J440' then 1 
+ when icd_code = 'J441' then 1 
+ when icd_code = 'J449' then 1
+else 0 end as copd 
+from "mimiciv_hosp"."diagnoses_icd"
+group by subject_id, hadm_id, icd_code
+order by subject_id,hadm_id, icd_code
+)
+SELECT * from hp where copd =1
+
+DROP TABLE IF EXISTS copd2;
+CREATE TABLE copd2 AS
+WITH cr as (
+SELECT * ,
+row_number() over (partition by hadm_id order by icd_code) as copd_order 
+FROM "mimiciv_derived"."copd1"
+)
+select * from cr where copd_order = 1
+
+
+--AKI
+DROP TABLE IF EXISTS aki_first1;
+CREATE TABLE aki_first1 AS
+with hp AS(
+SELECT
+"mimiciv_icu"."icustays".stay_id
+, AVG(aki_stage) as aki_stage_mean
+, AVG(aki_stage_smoothed) as aki_stage_smoothed_mean
+FROM "mimiciv_icu"."icustays"
+LEFT JOIN "mimiciv_derived"."kdigo_stages"
+ON "mimiciv_derived"."kdigo_stages".subject_id = "mimiciv_icu"."icustays".subject_id
+AND "mimiciv_derived"."kdigo_stages".stay_id = "mimiciv_icu"."icustays".stay_id
+AND "mimiciv_derived"."kdigo_stages".charttime <= DATETIME_ADD("mimiciv_icu"."icustays".intime,INTERVAL '1' DAY)
+AND "mimiciv_derived"."kdigo_stages".charttime >= "mimiciv_icu"."icustays".intime
+GROUP BY "mimiciv_icu"."icustays".stay_id
+)
+SELECT * from hp
+
+
+
+
+--Tracheostomy
+
+DROP TABLE IF EXISTS Tracheostomy1;
+CREATE TABLE Tracheostomy1 AS
+WITH cr as (
+SELECT * FROM "mimiciv_derived"."ventilation" WHERE lower(ventilation_status) LIKE '%tracheostomy%'
+)
+select * from cr
+
+DROP TABLE IF EXISTS Tracheostomy2;
+CREATE TABLE Tracheostomy2 AS
+WITH cr as (
+SELECT * ,
+row_number() over (partition by stay_id order by starttime) as Tracheostomy_order 
+FROM "mimiciv_derived"."tracheostomy1"
+)
+select * from cr where Tracheostomy_order = 1
+
+
+
+
+
+
+--RRT
+DROP TABLE IF EXISTS RT1;
+CREATE TABLE RT1 AS
+WITH cr as (
+SELECT * , 
+CASE WHEN "dialysis_active" = 1 THEN 1
+else 0 end as rrt
+FROM "mimiciv_derived"."rrt"
+)
+select * from cr where rrt = 1
+
+
+DROP TABLE IF EXISTS RT2;
+CREATE TABLE RT2 AS
+WITH cr as (
+SELECT * , 
+row_number() over (partition by stay_id order by charttime) as rrt_order 
+FROM "mimiciv_derived"."rt1"
+)
+select * from cr where rrt_order = 1
